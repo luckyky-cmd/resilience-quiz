@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진로탄력성 드라이브: 왜 내비게이션인가?</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', 'sans-serif'],
+                    },
+                    colors: {
+                        nav: {
+                            bg: '#0F172A',
+                            card: '#1E293B',
+                            accent: '#06B6D4',
+                            orange: '#F97316',
+                            green: '#10B981',
+                            blue: '#3B82F6',
+                        }
+                    },
+                    boxShadow: {
+                        'hud-glow': '0 0 20px rgba(6, 182, 212, 0.35)',
+                        'orange-glow': '0 0 20px rgba(249, 115, 22, 0.35)',
+                        'green-glow': '0 0 20px rgba(16, 185, 129, 0.35)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #0B1120;
+            color: #F8FAFC;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Glowing Map Grids & HUD Lines */
+        .hud-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        }
+
+        .radar-sweep {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, rgba(6, 182, 212, 0.25) 0deg, transparent 60deg, transparent 360deg);
+            animation: spinRadar 4s linear infinite;
+        }
+
+        @keyframes spinRadar {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .pulse-ring {
+            animation: pulseRing 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulseRing {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06B6D4;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between hud-grid select-none">
+
+    <!-- Top Header Navigation Bar -->
+    <header class="w-full bg-slate-900/90 border-b border-slate-800 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-hud-glow">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-cyan-400 tracking-wider uppercase block">Career Resilience Drive</span>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
+                        진로탄력성 드라이브 <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hidden sm:inline-block">내비게이션 시뮬레이터</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Global Status Badge -->
+            <div class="flex items-center space-x-3 text-xs sm:text-sm">
+                <div class="hidden md:flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-slate-300">목적지: <strong class="text-white">꿈과 성장의 미래</strong></span>
+                </div>
+                <button id="soundToggleBtn" onclick="toggleAudio()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700" title="음향 효과 On/Off">
+                    <svg id="soundOnIcon" class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                    </svg>
+                    <svg id="soundOffIcon" class="w-5 h-5 text-slate-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Container -->
+    <main class="max-w-4xl mx-auto w-full px-4 py-6 flex-grow flex flex-col justify-center">
+
+        <!-- Progress Tracker Indicator Bar -->
+        <div id="progressTracker" class="mb-6 bg-slate-900/80 p-3 rounded-2xl border border-slate-800 backdrop-blur-sm hidden">
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2 px-1">
+                <span id="currentStageLabel" class="font-bold text-cyan-400">STAGE 1 / 4</span>
+                <span id="currentStageTitle" class="text-slate-300">긍정적 마음 (Destination Trust)</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                <div id="progressBar" class="bg-gradient-to-r from-cyan-500 via-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500 w-1/4 shadow-hud-glow"></div>
+            </div>
+            <!-- Stage Node Icons -->
+            <div class="grid grid-cols-4 gap-2 mt-3 text-center text-xs">
+                <div id="node1" class="stage-node p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-semibold transition">01. 긍정적 마음</div>
+                <div id="node2" class="stage-node p-1.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-500 font-medium transition">02. 자기주도성</div>
+                <div id="node3" class="stage-node p-1.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-500 font-medium transition">03. 적응유연성</div>
+                <div id="node4" class="stage-node p-1.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-500 font-medium transition">04. 사회관계성</div>
+            </div>
+        </div>
+
+        <!-- ================= STAGE 0: INTRO & WARMUP QUIZ ================= -->
+        <section id="stage-0" class="stage-section transition-all duration-500">
+            <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl relative overflow-hidden">
+                <!-- Background Accent Graphic -->
+                <div class="absolute -right-16 -top-16 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="text-center max-w-2xl mx-auto space-y-4">
+                    <div class="inline-flex items-center space-x-2 bg-orange-950/80 text-orange-400 border border-orange-800 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                        💡 진로탄력성 및 진로전담교사의 역할
+                    </div>
+                    
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+                        운전 중 길을 잘못 들었을 때,<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">내비게이션의 반응은 어떠한가요?</span>
+                    </h2>
+
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                        우리는 인생이라는 도로 위에서 자주 경로를 이탈하곤 합니다.<br class="hidden sm:inline">
+                        진로의 불확실성 속에서 내비게이션 알고리즘은 우리에게 중요한 힌트를 제공합니다.
+                    </p>
+                </div>
+
+                <!-- Intro Warmup Quiz Box -->
+                <div class="mt-8 bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <span class="text-xs font-bold text-orange-400 uppercase tracking-wide">1분 공감 퀴즈</span>
+                        <span class="text-xs text-slate-400">하나의 옵션을 선택해 보세요</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="introQuizOptions">
+                        <button onclick="answerIntroQuiz(0)" class="intro-quiz-btn group p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-red-500/50 hover:bg-slate-850 text-left transition flex flex-col justify-between h-full">
+                            <div>
+                                <span class="text-xs font-bold text-red-400 bg-red-950/60 px-2 py-0.5 rounded border border-red-900 mb-2 inline-block">① 비난형</span>
+                                <p class="text-sm font-semibold text-slate-200 mt-1">"너 왜 거기 로 갔니?" 하고 운전자를 탓한다.</p>
+                            </div>
+                            <span class="text-xs text-slate-500 group-hover:text-red-400 mt-3 block font-mono">선택하기 ➔</span>
+                        </button>
+
+                        <button onclick="answerIntroQuiz(1)" class="intro-quiz-btn group p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-850 text-left transition flex flex-col justify-between h-full">
+                            <div>
+                                <span class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-900 mb-2 inline-block">② 포기형</span>
+                                <p class="text-sm font-semibold text-slate-200 mt-1">"운전 자격이 없네" 하고 차를 멈춰버린다.</p>
+                            </div>
+                            <span class="text-xs text-slate-500 group-hover:text-amber-400 mt-3 block font-mono">선택하기 ➔</span>
+                        </button>
+
+                        <button onclick="answerIntroQuiz(2)" class="intro-quiz-btn group p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-400 hover:bg-cyan-950/30 text-left transition flex flex-col justify-between h-full">
+                            <div>
+                                <span class="text-xs font-bold text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800 mb-2 inline-block">③ 재탐색형</span>
+                                <p class="text-sm font-semibold text-slate-200 mt-1">아무 말 없이 차분하게 "경로를 재탐색합니다"라고 안내한다.</p>
+                            </div>
+                            <span class="text-xs text-slate-500 group-hover:text-cyan-400 mt-3 block font-mono">선택하기 ➔</span>
+                        </button>
+                    </div>
+
+                    <!-- Feedback Banner -->
+                    <div id="introFeedback" class="hidden p-4 rounded-xl bg-cyan-950/90 border border-cyan-500/50 text-slate-200 text-sm space-y-2 animate-fadeIn">
+                        <div class="flex items-center space-x-2 text-cyan-300 font-bold">
+                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>정답입니다! 왜 '내비게이션' 비유가 타당할까요?</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            내비게이션은 결코 운전자를 비난하거나 차를 멈추지 않습니다. 실패나 이탈을 좌절이 아닌 <strong>'새로운 경로 정보'</strong>로 받아들이기 때문입니다. 교사와 학습자 모두에게 필요한 진로탄력성의 핵심이 여기에 있습니다.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-center">
+                    <button id="startDriveBtn" onclick="startDrive()" disabled class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-800 opacity-50 text-slate-400 font-bold text-base cursor-not-allowed transition duration-300 shadow-lg flex items-center justify-center space-x-3">
+                        <span>퀴즈를 풀어 드라이브를 시작하세요</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STAGE 1: 긍정적 마음 (DESTINATION TRUST) ================= -->
+        <section id="stage-1" class="stage-section hidden transition-all duration-500">
+            <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+                <!-- Header Info -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                            <span>01. Destination Trust</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">긍정적 마음: 목적지에 대한 신뢰 유지</h3>
+                    </div>
+                    <span class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-slate-300 border border-slate-700 w-fit">
+                        "길을 틀려도 목적지에 도착한다는 확신"
+                    </span>
+                </div>
+
+                <!-- Visual Interactive Map Canvas Area -->
+                <div class="relative bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden h-64 sm:h-72 flex items-center justify-center">
+                    <canvas id="stage1Canvas" class="w-full h-full block"></canvas>
+                    
+                    <!-- Alert Overlay Box -->
+                    <div id="s1AlertOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center transition-all duration-300">
+                        <div class="w-12 h-12 rounded-full bg-red-950 border border-red-500 flex items-center justify-center mb-3 animate-bounce">
+                            <span class="text-2xl">🚨</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-red-400">경로 이탈 발생!</h4>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-md">
+                            원했던 시험이나 목표에서 생각지도 못한 이탈을 겪었습니다.<br>이때 내비게이션 모드라면 어떻게 반응할까요?
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Decision Cards -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wide block">원하는 마음가짐을 선택하세요:</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button onclick="handleStage1Choice('blame')" class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-red-500/60 text-left transition group">
+                            <span class="text-xs font-bold text-red-400 block mb-1">❌ 자책형</span>
+                            <p class="text-xs text-slate-300 font-medium">"난 왜 이 모양일까? 자격이 없어." (자책과 후회)</p>
+                        </button>
+                        <button onclick="handleStage1Choice('stop')" class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/60 text-left transition group">
+                            <span class="text-xs font-bold text-amber-400 block mb-1">❌ 포기형</span>
+                            <p class="text-xs text-slate-300 font-medium">"더 이상 차를 몰 수 없어. 시동을 끈다." (좌절)</p>
+                        </button>
+                        <button onclick="handleStage1Choice('trust')" class="p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/60 hover:bg-cyan-950/80 text-left transition group shadow-hud-glow">
+                            <span class="text-xs font-bold text-cyan-400 block mb-1">✅ 내비게이션 모드</span>
+                            <p class="text-xs text-slate-100 font-medium">"괜찮아! 경로가 바뀌었을 뿐, 목적지는 여전히 거기 있어!"</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explanation Box & Next Button -->
+                <div id="s1Feedback" class="hidden p-4 rounded-xl bg-slate-950 border border-cyan-500/40 text-xs sm:text-sm text-slate-300 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-cyan-400 flex items-center gap-2">
+                            <span>🔊 내비게이션 음성:</span>
+                            <span class="text-white">"차분하게 경로를 재탐색합니다."</span>
+                        </span>
+                        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-semibold">기둥 1 해제 완료</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        실패나 경로 이탈을 좌절이 아닌 <strong>'새로운 정보'</strong>로 수용합니다. 삶의 우회로는 있을지언정 궁극적인 삶의 목적지는 포기하지 않습니다.
+                    </p>
+                    <div class="pt-2 flex justify-end">
+                        <button onclick="goToStage(2)" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white text-xs sm:text-sm hover:opacity-90 transition shadow-hud-glow">
+                            다음 기둥: 02. 자기주도성 ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STAGE 2: 자기주도성 (STEERING AUTONOMY) ================= -->
+        <section id="stage-2" class="stage-section hidden transition-all duration-500">
+            <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+                <!-- Header Info -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 text-orange-400 text-xs font-bold uppercase tracking-wider">
+                            <span>02. Steering Autonomy</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">자기주도성: 주체적으로 핸들 조작하기</h3>
+                    </div>
+                    <span class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-slate-300 border border-slate-700 w-fit">
+                        "스스로 핸들을 잡고 방향을 결정하는 주체성"
+                    </span>
+                </div>
+
+                <!-- Interactive Steering Wheel Screen -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
+                    <p class="text-xs text-slate-400 mb-4 text-center">
+                        주변의 시선과 조급함이라는 거센 측풍이 차선을 흔듭니다.<br>
+                        <strong>핸들 버튼을 누르거나 슬라이더를 조작하여 중앙 지표(0°)에 핸들을 맞추세요!</strong>
+                    </p>
+
+                    <!-- Pressure Indicator Status -->
+                    <div class="w-full max-w-md bg-slate-900 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs mb-6">
+                        <span id="windStatus" class="text-amber-400 font-semibold animate-pulse">⚠️ 측풍 유입: 남들의 억압적 시선</span>
+                        <span id="steerAlignment" class="font-mono text-cyan-400 font-bold">핸들 오차: +35°</span>
+                    </div>
+
+                    <!-- Visual Steering Wheel Graphic Canvas -->
+                    <div class="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center my-2">
+                        <div id="steeringWheel" class="w-full h-full rounded-full border-8 border-slate-700 bg-slate-900 flex items-center justify-center transition-transform duration-150 shadow-2xl relative">
+                            <!-- Steering wheel inner spokes -->
+                            <div class="w-full h-3 bg-slate-600 absolute"></div>
+                            <div class="w-3 h-full bg-slate-600 absolute"></div>
+                            <div class="w-16 h-16 rounded-full bg-cyan-500/20 border-4 border-cyan-400 flex items-center justify-center z-10">
+                                <span class="text-xs font-bold text-cyan-300">GPS</span>
+                            </div>
+                        </div>
+                        <!-- Target Alignment Marker -->
+                        <div class="absolute -top-3 w-4 h-4 bg-emerald-400 rounded-full shadow-green-glow"></div>
+                    </div>
+
+                    <!-- Steering Controls -->
+                    <div class="w-full max-w-md mt-6 space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="adjustSteering(-15)" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl font-bold text-xs sm:text-sm text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1">
+                                ◀ 왼쪽으로 잡기
+                            </button>
+                            <button onclick="adjustSteering(15)" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl font-bold text-xs sm:text-sm text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1">
+                                오른쪽으로 잡기 ▶
+                            </button>
+                        </div>
+                        <input type="range" id="steerRange" min="-90" max="90" value="35" oninput="onSteerSlider(this.value)" class="w-full accent-cyan-400 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Explanation Box & Next Button -->
+                <div id="s2Feedback" class="hidden p-4 rounded-xl bg-slate-950 border border-orange-500/40 text-xs sm:text-sm text-slate-300 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-orange-400 flex items-center gap-2">
+                            <span>🎯 주체적 방향 정렬 완료!</span>
+                        </span>
+                        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-semibold">기둥 2 해제 완료</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        타인의 강요나 휩쓸림이 아닌, <strong>스스로 핸들을 꽉 잡고 내 진로의 방향을 결정하는 주체성</strong>을 확보했습니다.
+                    </p>
+                    <div class="pt-2 flex justify-end">
+                        <button onclick="goToStage(3)" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 font-bold text-white text-xs sm:text-sm hover:opacity-90 transition shadow-orange-glow">
+                            다음 기둥: 03. 적응유연성 ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STAGE 3: 적응유연성 (ROUTE REROUTING) ================= -->
+        <section id="stage-3" class="stage-section hidden transition-all duration-500">
+            <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+                <!-- Header Info -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 text-blue-400 text-xs font-bold uppercase tracking-wider">
+                            <span>03. Route Rerouting</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">적응유연성: 즉시 우회로 계산하기</h3>
+                    </div>
+                    <span class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-slate-300 border border-slate-700 w-fit">
+                        "변화 시 유연하게 대안 우회로를 재계산"
+                    </span>
+                </div>
+
+                <!-- Interactive Road Blockade Simulation -->
+                <div class="bg-slate-950 p-4 sm:p-6 rounded-2xl border border-slate-800 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-bold text-amber-400 flex items-center gap-1">
+                            <span>🚧 도로 통제 발생:</span>
+                            <span class="text-slate-300">원하던 진학/취업 경로가 막혔습니다!</span>
+                        </span>
+                        <span id="rerouteTimer" class="text-xs font-mono text-cyan-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">우회로 탐색 중...</span>
+                    </div>
+
+                    <!-- Canvas Map for Detour Puzzle -->
+                    <div class="relative h-56 sm:h-64 rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+                        <canvas id="stage3Canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <!-- Route Choice Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                        <button onclick="handleStage3Route('A')" class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-red-500/50 text-left transition">
+                            <span class="text-xs font-bold text-red-400 block">경로 A: 막힌 도로 강행</span>
+                            <span class="text-xs text-slate-400">"벽에 부딪혀도 무조건 이 길만 고집할래!"</span>
+                        </button>
+                        <button onclick="handleStage3Route('B')" class="p-3 rounded-xl bg-cyan-950/50 border border-cyan-500/60 hover:bg-cyan-950 text-left transition shadow-hud-glow">
+                            <span class="text-xs font-bold text-cyan-300 block">경로 B: 실질적 우회로 (추천)</span>
+                            <span class="text-xs text-slate-300">"관련 프로젝트와 경험을 쌓는 대체 우회로 탐색!"</span>
+                        </button>
+                        <button onclick="handleStage3Route('C')" class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-left transition">
+                            <span class="text-xs font-bold text-amber-400 block">경로 C: 출발지로 유턴</span>
+                            <span class="text-xs text-slate-400">"다 포기하고 완전 원점으로 돌아갈래."</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explanation Box & Next Button -->
+                <div id="s3Feedback" class="hidden p-4 rounded-xl bg-slate-950 border border-blue-500/40 text-xs sm:text-sm text-slate-300 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-blue-400 flex items-center gap-2">
+                            <span>🔄 대안 경로 우회 성공!</span>
+                        </span>
+                        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-semibold">기둥 3 해제 완료</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        갑작스러운 환경 변화나 차단에 직면했을 때, 당황하지 않고 <strong>즉시 최선의 유연한 대안 우회로를 계산하여 전진</strong>합니다.
+                    </p>
+                    <div class="pt-2 flex justify-end">
+                        <button onclick="goToStage(4)" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 font-bold text-white text-xs sm:text-sm hover:opacity-90 transition shadow-hud-glow">
+                            다음 기둥: 04. 사회관계성 ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STAGE 4: 사회관계성 (GPS NETWORK) ================= -->
+        <section id="stage-4" class="stage-section hidden transition-all duration-500">
+            <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+                <!-- Header Info -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                            <span>04. GPS Network</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">사회관계성: 위성 및 교통 센터 조력 연결</h3>
+                    </div>
+                    <span class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-slate-300 border border-slate-700 w-fit">
+                        "멘토, 교사, 동료와 실시간 연결되는 GPS 네트워크"
+                    </span>
+                </div>
+
+                <!-- Interactive Fog clearing Canvas Box -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 relative">
+                    <p class="text-xs text-slate-400 text-center mb-3">
+                        짙은 안개 속에서 혼자 고민하지 마세요.<br>
+                        <strong>아래 3개의 GPS 위성 노드(조력자)를 모두 터치하여 연결 신호를 쏘아 올리세요!</strong>
+                    </p>
+
+                    <div class="relative h-64 rounded-xl overflow-hidden border border-slate-800 bg-slate-900">
+                        <canvas id="stage4Canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <!-- Satellite Connection Node Buttons -->
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-4">
+                        <button id="nodeBtn1" onclick="connectGPSNode(1)" class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-400 text-center transition">
+                            <span class="text-lg block">👨‍🏫</span>
+                            <span class="text-xs font-bold text-slate-200 block mt-1">진로전담교사</span>
+                            <span id="nodeStatus1" class="text-[10px] text-slate-500 font-mono">연결 대기</span>
+                        </button>
+                        <button id="nodeBtn2" onclick="connectGPSNode(2)" class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-400 text-center transition">
+                            <span class="text-lg block">🎓</span>
+                            <span class="text-xs font-bold text-slate-200 block mt-1">멘토 & 선배</span>
+                            <span id="nodeStatus2" class="text-[10px] text-slate-500 font-mono">연결 대기</span>
+                        </button>
+                        <button id="nodeBtn3" onclick="connectGPSNode(3)" class="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-400 text-center transition">
+                            <span class="text-lg block">🤝</span>
+                            <span class="text-xs font-bold text-slate-200 block mt-1">동료 & 친구</span>
+                            <span id="nodeStatus3" class="text-[10px] text-slate-500 font-mono">연결 대기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explanation Box & Complete Button -->
+                <div id="s4Feedback" class="hidden p-4 rounded-xl bg-slate-950 border border-emerald-500/40 text-xs sm:text-sm text-slate-300 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-emerald-400 flex items-center gap-2">
+                            <span>📡 GPS 실시간 조력 네트워크 활성화!</span>
+                        </span>
+                        <span class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-semibold">모든 기둥 달성</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        교사는 지시자가 아니라, <strong>실시간 길을 함께 밝혀주는 유연한 GPS 네트워크의 조력자</strong>입니다.
+                    </p>
+                    <div class="pt-2 flex justify-end">
+                        <button onclick="finishDrive()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 font-extrabold text-white text-sm hover:opacity-90 transition shadow-green-glow flex items-center gap-2">
+                            <span>🏆 드라이브 완료 & 결론 대시보드 보기</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STAGE 5: FINAL DASHBOARD & ESSAY ================= -->
+        <section id="stage-5" class="stage-section hidden transition-all duration-500">
+            <div class="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-8">
+                
+                <!-- Hero Completion Banner -->
+                <div class="text-center space-y-3 border-b border-slate-800 pb-6">
+                    <div class="inline-flex items-center space-x-2 bg-emerald-950 text-emerald-400 border border-emerald-800 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                        🎉 드라이브 완주 축하합니다!
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+                        왜 <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-emerald-400">'내비게이션'</span>인가?
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
+                        내비게이션 알고리즘으로 본 진로탄력성 4대 기둥을 완벽하게 마스터하셨습니다.
+                    </p>
+                </div>
+
+                <!-- 4 Pillars Summary Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Pillar 1 -->
+                    <div class="p-4 rounded-2xl bg-slate-950 border border-cyan-500/40 relative overflow-hidden">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800 flex items-center justify-center font-bold text-cyan-300 text-sm">01</span>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">긍정적 마음</h4>
+                                <span class="text-[10px] text-cyan-400 font-mono">Destination Trust</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            길을 틀려도 목적지에 도달할 것이라는 내면의 복원력과 목적지 신뢰.
+                        </p>
+                    </div>
+
+                    <!-- Pillar 2 -->
+                    <div class="p-4 rounded-2xl bg-slate-950 border border-orange-500/40 relative overflow-hidden">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-orange-950 border border-orange-800 flex items-center justify-center font-bold text-orange-300 text-sm">02</span>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">자기주도성</h4>
+                                <span class="text-[10px] text-orange-400 font-mono">Steering Autonomy</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            타인의 지시가 아닌, 스스로 핸들을 잡고 방향을 결정하는 주체성.
+                        </p>
+                    </div>
+
+                    <!-- Pillar 3 -->
+                    <div class="p-4 rounded-2xl bg-slate-950 border border-blue-500/40 relative overflow-hidden">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center font-bold text-blue-300 text-sm">03</span>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">적응유연성</h4>
+                                <span class="text-[10px] text-blue-400 font-mono">Route Rerouting</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            도로 차단 및 예기치 못한 변화 시 즉시 대안 우회로를 계산하는 유연함.
+                        </p>
+                    </div>
+
+                    <!-- Pillar 4 -->
+                    <div class="p-4 rounded-2xl bg-slate-950 border border-emerald-500/40 relative overflow-hidden">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center font-bold text-emerald-300 text-sm">04</span>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">사회관계성</h4>
+                                <span class="text-[10px] text-emerald-400 font-mono">GPS Network</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            위성·교통 센터처럼 멘토, 교사, 동료와 실시간 연결되어 조력을 얻음.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Core Takeaway Essay Box -->
+                <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 rounded-2xl border border-cyan-500/30 space-y-4">
+                    <h3 class="text-base font-bold text-cyan-300 flex items-center gap-2">
+                        <span>💬 핵심 인사이트: 진로전담교사와 학습자를 위한 조언</span>
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+                        "내비게이션은 길을 잘못 들었다고 운전자를 비난하거나 차를 멈추지 않습니다. 그저 차분하게 새 경로를 계산할 뿐입니다.<br><br>
+                        진로탄력성 또한 실패를 자책하거나 멈추는 것이 아니라, <strong>신뢰 · 주체성 · 유연함 · 연결</strong>을 통해 삶의 목적지로 계속 나아가는 힘입니다. 교사는 정답을 강요하는 지시자가 아닌, 유연한 경로 재탐색 조력자입니다."
+                    </p>
+                </div>
+
+                <!-- Printable Certificate Badge Box -->
+                <div id="certificateCard" class="bg-slate-950 p-6 rounded-2xl border-2 border-dashed border-cyan-500/50 text-center space-y-3 relative">
+                    <div class="text-xs font-bold text-cyan-400 tracking-widest uppercase">Career Resilience Driver Badge</div>
+                    <h3 class="text-lg font-bold text-white">진로탄력성 내비게이터 인증서</h3>
+                    <p class="text-xs text-slate-400">
+                        위 사람은 진로탄력성 4대 기둥(신뢰·주체성·유연함·연결)의 알고리즘을 수료하였음을 인증합니다.
+                    </p>
+                    <div class="text-xs font-mono text-emerald-400 bg-slate-900 py-1.5 px-3 rounded-lg inline-block border border-slate-800">
+                        발급일: <span id="certDate"></span> | Status: VERIFIED DRIVER 🟢
+                    </div>
+                </div>
+
+                <!-- Footer Action Buttons -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button onclick="copyCertificateText()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm border border-slate-700 transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        <span>인증서 내용 복사하기</span>
+                    </button>
+                    <button onclick="resetGame()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white font-bold text-xs sm:text-sm transition shadow-hud-glow flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>처음부터 다시 드라이브 하기</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Page Footer -->
+    <footer class="w-full bg-slate-950 border-t border-slate-900 py-4 text-center text-xs text-slate-500">
+        <p>진로탄력성 및 진로전담교사의 역할 — 내비게이션 알고리즘 인터랙티브 시뮬레이터</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /* ================= WEB AUDIO SYNTHESIZER ================= */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+            }
+
+            playBeep(freq = 440, type = 'sine', duration = 0.1, gainVal = 0.1) {
+                if (this.muted) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+
+            playRerouteChime() {
+                if (this.muted) return;
+                this.init();
+                try {
+                    // Two-tone Kakao/Naver Navi chime style
+                    this.playBeep(523.25, 'sine', 0.15, 0.12); // C5
+                    setTimeout(() => {
+                        this.playBeep(659.25, 'sine', 0.25, 0.15); // E5
+                    }, 120);
+                } catch(e) {}
+            }
+
+            playSuccessChord() {
+                if (this.muted) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        this.playBeep(freq, 'triangle', 0.25, 0.1);
+                    }, idx * 80);
+                });
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        function toggleAudio() {
+            sound.muted = !sound.muted;
+            document.getElementById('soundOnIcon').classList.toggle('hidden', sound.muted);
+            document.getElementById('soundOffIcon').classList.toggle('hidden', !sound.muted);
+        }
+
+        /* ================= GAME STATE MANAGEMENT ================= */
+        let currentStage = 0;
+        let steeringAngle = 35;
+        let connectedNodes = [false, false, false];
+
+        function answerIntroQuiz(optionIndex) {
+            sound.playBeep(440, 'sine', 0.1);
+            const feedback = document.getElementById('introFeedback');
+            const startBtn = document.getElementById('startDriveBtn');
+
+            feedback.classList.remove('hidden');
+
+            if (optionIndex === 2) {
+                sound.playRerouteChime();
+            }
+
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-800');
+            startBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-blue-600', 'text-white', 'shadow-hud-glow', 'hover:opacity-90');
+            startBtn.querySelector('span').innerText = '드라이브 시작하기 (STAGE 1)';
+        }
+
+        function startDrive() {
+            sound.playRerouteChime();
+            document.getElementById('progressTracker').classList.remove('hidden');
+            goToStage(1);
+        }
+
+        function goToStage(stageNum) {
+            sound.playBeep(587.33, 'sine', 0.12);
+            currentStage = stageNum;
+
+            // Hide all stage sections
+            document.querySelectorAll('.stage-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`stage-${stageNum}`).classList.remove('hidden');
+
+            // Update Progress Bar
+            const progressPercent = (stageNum / 4) * 100;
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+            document.getElementById('currentStageLabel').innerText = `STAGE ${stageNum} / 4`;
+
+            // Update Node highlights
+            const titles = [
+                "",
+                "긍정적 마음 (Destination Trust)",
+                "자기주도성 (Steering Autonomy)",
+                "적응유연성 (Route Rerouting)",
+                "사회관계성 (GPS Network)"
+            ];
+            document.getElementById('currentStageTitle').innerText = titles[stageNum] || "";
+
+            for (let i = 1; i <= 4; i++) {
+                const node = document.getElementById(`node${i}`);
+                if (i <= stageNum) {
+                    node.className = "stage-node p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500 text-cyan-300 font-semibold transition";
+                } else {
+                    node.className = "stage-node p-1.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-500 font-medium transition";
+                }
+            }
+
+            // Init stage-specific canvases
+            if (stageNum === 1) initStage1Canvas();
+            if (stageNum === 2) initStage2Controls();
+            if (stageNum === 3) initStage3Canvas();
+            if (stageNum === 4) initStage4Canvas();
+        }
+
+        /* ================= STAGE 1 LOGIC & CANVAS ================= */
+        let stage1AnimId = null;
+        function initStage1Canvas() {
+            const canvas = document.getElementById('stage1Canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            let carX = 50;
+            let carY = canvas.height / 2;
+            let phase = 'normal'; // 'normal', 'detour', 'recalculating'
+
+            function drawStage1() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw Grid
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < canvas.width; x += 30) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+
+                // Main Destination Line
+                const destX = canvas.width - 60;
+                const destY = canvas.height / 2;
+
+                // Destination Goal Icon
+                ctx.fillStyle = '#06B6D4';
+                ctx.beginPath(); ctx.arc(destX, destY, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '10px Pretendard';
+                ctx.fillText('목적지', destX - 14, destY - 18);
+
+                // Route Path
+                ctx.beginPath();
+                ctx.strokeStyle = '#06B6D4';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([6, 6]);
+                ctx.moveTo(30, canvas.height / 2);
+                ctx.lineTo(destX, destY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Car Drawing
+                ctx.fillStyle = '#F97316';
+                ctx.beginPath(); ctx.arc(carX, carY, 8, 0, Math.PI * 2); ctx.fill();
+
+                stage1AnimId = requestAnimationFrame(drawStage1);
+            }
+
+            drawStage1();
+        }
+
+        function handleStage1Choice(type) {
+            const overlay = document.getElementById('s1AlertOverlay');
+            const feedback = document.getElementById('s1Feedback');
+
+            if (type === 'trust') {
+                sound.playRerouteChime();
+                overlay.classList.add('hidden');
+                feedback.classList.remove('hidden');
+            } else {
+                sound.playBeep(220, 'sawtooth', 0.2);
+                alert("비난이나 포기로는 경로가 재탐색되지 않습니다! '내비게이션 모드'를 선택해보세요.");
+            }
+        }
+
+        /* ================= STAGE 2 LOGIC ================= */
+        function initStage2Controls() {
+            steeringAngle = 35;
+            updateSteeringUI();
+        }
+
+        function adjustSteering(delta) {
+            steeringAngle += delta;
+            if (steeringAngle < -90) steeringAngle = -90;
+            if (steeringAngle > 90) steeringAngle = 90;
+            document.getElementById('steerRange').value = steeringAngle;
+            updateSteeringUI();
+        }
+
+        function onSteerSlider(val) {
+            steeringAngle = parseInt(val);
+            updateSteeringUI();
+        }
+
+        function updateSteeringUI() {
+            sound.playBeep(300 + Math.abs(steeringAngle) * 2, 'sine', 0.05);
+            const wheel = document.getElementById('steeringWheel');
+            const alignText = document.getElementById('steerAlignment');
+            const feedback = document.getElementById('s2Feedback');
+
+            wheel.style.transform = `rotate(${steeringAngle}deg)`;
+            alignText.innerText = `핸들 오차: ${steeringAngle > 0 ? '+' : ''}${steeringAngle}°`;
+
+            if (Math.abs(steeringAngle) <= 5) {
+                alignText.className = "font-mono text-emerald-400 font-bold";
+                alignText.innerText = "정렬 완료! (0°)";
+                sound.playSuccessChord();
+                feedback.classList.remove('hidden');
+            } else {
+                alignText.className = "font-mono text-cyan-400 font-bold";
+            }
+        }
+
+        /* ================= STAGE 3 LOGIC & CANVAS ================= */
+        function initStage3Canvas() {
+            const canvas = document.getElementById('stage3Canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Blocked Main Road
+            ctx.strokeStyle = '#EF4444';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(30, canvas.height / 2);
+            ctx.lineTo(canvas.width / 2, canvas.height / 2);
+            ctx.stroke();
+
+            // Roadblock symbol 🚧
+            ctx.fillStyle = '#EF4444';
+            ctx.font = '20px Pretendard';
+            ctx.fillText('🚧 차단', canvas.width / 2 - 20, canvas.height / 2 + 6);
+
+            // Alternative Route B (Curved detour)
+            ctx.strokeStyle = '#06B6D4';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(30, canvas.height / 2);
+            ctx.quadraticCurveTo(canvas.width / 2, 20, canvas.width - 40, canvas.height / 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Destination
+            ctx.fillStyle = '#10B981';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 40, canvas.height / 2, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function handleStage3Route(route) {
+            const feedback = document.getElementById('s3Feedback');
+            if (route === 'B') {
+                sound.playRerouteChime();
+                feedback.classList.remove('hidden');
+            } else if (route === 'A') {
+                sound.playBeep(200, 'sawtooth', 0.2);
+                alert("막힌 도로를 고집하면 차가 나아가지 못합니다! 유연한 우회로 B를 선택해보세요.");
+            } else {
+                sound.playBeep(200, 'sawtooth', 0.2);
+                alert("출발지로 돌아가지 않고 우회로를 통해 목적지로 향하세요!");
+            }
+        }
+
+        /* ================= STAGE 4 LOGIC & CANVAS ================= */
+        function initStage4Canvas() {
+            connectedNodes = [false, false, false];
+            drawStage4();
+        }
+
+        function drawStage4() {
+            const canvas = document.getElementById('stage4Canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Fog layer if not all connected
+            const allConnected = connectedNodes.every(Boolean);
+
+            if (!allConnected) {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#94A3B8';
+                ctx.font = '12px Pretendard';
+                ctx.fillText('☁️ 짙은 안개 구간 (GPS 조력 네트워크를 연결하세요)', canvas.width / 2 - 120, canvas.height / 2);
+            } else {
+                // Clear sky with glowing connected beam lines
+                ctx.fillStyle = '#0284C7';
+                ctx.font = '14px Pretendard';
+                ctx.fillText('✨ 시야 확보 완료! 조력 네트워크 신호 정상 가동', canvas.width / 2 - 130, canvas.height / 2);
+            }
+        }
+
+        function connectGPSNode(nodeNum) {
+            sound.playBeep(600 + nodeNum * 100, 'sine', 0.15);
+            connectedNodes[nodeNum - 1] = true;
+
+            const status = document.getElementById(`nodeStatus${nodeNum}`);
+            const btn = document.getElementById(`nodeBtn${nodeNum}`);
+
+            status.innerText = "연결 완료 🟢";
+            status.className = "text-[10px] text-emerald-400 font-bold font-mono";
+            btn.className = "p-3 rounded-xl bg-emerald-950/60 border border-emerald-500 text-center transition shadow-green-glow";
+
+            drawStage4();
+
+            if (connectedNodes.every(Boolean)) {
+                sound.playSuccessChord();
+                document.getElementById('s4Feedback').classList.remove('hidden');
+            }
+        }
+
+        function finishDrive() {
+            sound.playSuccessChord();
+            goToStage(5);
+            document.getElementById('certDate').innerText = new Date().toLocaleDateString('ko-KR');
+        }
+
+        function copyCertificateText() {
+            const certText = `[진로탄력성 내비게이터 인증서]\n\n실패는 자책이 아닌 '경로 재탐색'입니다.\n진로탄력성 4대 기둥 수료 완료:\n1. 긍정적 마음 (Destination Trust)\n2. 자기주도성 (Steering Autonomy)\n3. 적응유연성 (Route Rerouting)\n4. 사회관계성 (GPS Network)\n\n발급일: ${new Date().toLocaleDateString('ko-KR')}`;
